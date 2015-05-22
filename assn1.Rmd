@@ -1,0 +1,61 @@
+# Practical Machine Learning programming Assignment
+
+This document illustrates the fitting of a random forest model to predict the activity quality from sensor data. 
+
+Load required packages and data
+```{r}
+library(dplyr)
+library(caret)
+set.seed(123)
+train <- read.csv("pml-training.csv",header=TRUE,stringsAsFactors=FALSE)
+test <- read.csv("pml-testing.csv",header=TRUE,stringsAsFactors=FALSE)
+
+```
+
+Select features with no missing values;
+```{r}
+selectedFeatures <- complete.cases(t(test))
+selectedFeatures[2:7]<-F # remove time and subject variables
+train <- train[,selectedFeatures]
+test<- test[,selectedFeatures]
+test <- test[,-ncol(test)]
+train$classe <- factor(train$classe)
+```
+
+Split training set to a training and validation set:
+```{r}
+inTrain <- createDataPartition(train$classe,p=0.7,list=F)
+train <- train[inTrain,]
+val <- train[-inTrain,]
+```
+
+Train a random forest with 10-fold cross-validation and the default number of values for mtry (3)
+```{r,cache=TRUE}
+model <- train(classe~.,data=train[,-1],method="rf") #remove id variable from train set
+model
+```
+
+Test the model on the validation set
+```{r}
+pred<-predict(model,newdata=val)
+mean(pred==val$classe)
+```
+
+## Final model accuracy estimates: 
+
+Cross-validation accuracy: 98.9%
+
+Validation set accuracy: 100%
+
+Test set accuracy (20 examples): 100%
+
+```{r, echo=FALSE}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+```
+
